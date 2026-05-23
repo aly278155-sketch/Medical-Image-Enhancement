@@ -1,1 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medical Image Enhancement System</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e17; color: #e2e8f0; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
 
+  /* Header */
+  .header { background: #111827; border-bottom: 1px solid #1e2d45; padding: 14px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .header-icon { font-size: 28px; }
+  .header-title { font-size: 18px; font-weight: 800; color: #fff; }
+  .header-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .header-dev { font-size: 11px; color: #00d4ff; margin-top: 4px; font-weight: 600; }
+  .badges { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; letter-spacing: 1px; }
+  .badge-blue { background: #00d4ff22; color: #00d4ff; border: 1px solid #00d4ff44; }
+  .badge-green { background: #00e67622; color: #00e676; border: 1px solid #00e67644; }
+  .badge-amber { background: #ffb30022; color: #ffb300; border: 1px solid #ffb30044; }
+
+  /* Layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+  @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+
+  /* Buttons */
+  .btn { padding: 9px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13px; border: none; transition: all 0.15s; }
+  .btn-primary { background: #00d4ff; color: #0a0e17; }
+  .btn-secondary { background: #161d2e; color: #e2e8f0; border: 1px solid #1e2d45; }
+  .btn-green { background: #161d2e; color: #00e676; border: 1px solid #00e67644; }
+  .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+
+  /* Canvas panels */
+  .canvas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 600px) { .canvas-grid { grid-template-columns: 1fr; } }
+  .canvas-panel { background: #161d2e; border-radius: 12px; border: 1px solid #1e2d45; overflow: hidden; }
+  .canvas-header { padding: 10px 14px; border-bottom: 1px solid #1e2d45; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 600; }
+  .canvas-wrap { position: relative; background: #050810; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+  canvas { display: block; width: 100%; image-rendering: pixelated; }
+  .canvas-placeholder { font-size: 12px; color: #64748b; text-align: center; padding: 40px; }
+  .canvas-placeholder span { font-size: 32px; display: block; margin-bottom: 8px; }
+  .processing-overlay { position: absolute; inset: 0; background: #00000088; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #00d4ff; }
+
+  /* Stats */
+  .stats-panel { background: #161d2e; border-radius: 12px; border: 1px solid #1e2d45; padding: 16px; margin-bottom: 16px; }
+  .stats-title { font-size: 11px; color: #64748b; margin-bottom: 10px; letter-spacing: 1px; font-weight: 600; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat-box { text-align: center; padding: 8px 12px; background: #0a0e17; border-radius: 8px; border: 1px solid #1e2d45; }
+  .stat-val { font-size: 18px; font-weight: 700; color: #00d4ff; font-family: monospace; }
+  .stat-label { font-size: 10px; color: #64748b; margin-top: 2px; letter-spacing: 0.5px; }
+
+  /* Pipeline */
+  .pipeline { background: #161d2e; border-radius: 12px; border: 1px solid #1e2d45; padding: 10px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .pipeline-label { font-size: 11px; color: #64748b; letter-spacing: 1px; font-weight: 600; }
+
+  /* Right panel */
+  .right-panel { display: flex; flex-direction: column; gap: 16px; }
+  .panel { background: #161d2e; border-radius: 12px; border: 1px solid #1e2d45; padding: 16px; }
+  .panel-title { font-size: 11px; margin-bottom: 12px; letter-spacing: 1px; font-weight: 700; }
+  .panel-title-blue { color: #64748b; }
+  .panel-title-accent { color: #00d4ff; }
+  .panel-title-green { color: #00e676; }
+  .panel-title-amber { color: #ffb300; }
+
+  /* Presets */
+  .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .preset-btn { padding: 10px 12px; border-radius: 8px; border: 1px solid #1e2d45; background: #0a0e17; color: #e2e8f0; cursor: pointer; font-size: 12px; font-weight: 600; text-align: left; transition: all 0.15s; }
+  .preset-btn:hover { border-color: #00d4ff; color: #00d4ff; }
+  .preset-icon { font-size: 18px; margin-bottom: 4px; display: block; }
+  .preset-steps { font-size: 10px; color: #64748b; margin-top: 2px; }
+
+  /* Technique buttons */
+  .tech-group { margin-bottom: 16px; }
+  .tech-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tech-btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #1e2d45; background: #161d2e; color: #e2e8f0; cursor: pointer; font-size: 12px; transition: all 0.15s; display: flex; flex-direction: column; gap: 3px; min-width: 100px; }
+  .tech-btn:hover { border-color: #00d4ff44; }
+  .tech-btn.active { border-color: #00d4ff; background: #00d4ff18; color: #00d4ff; font-weight: 700; }
+  .tech-btn .tech-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 99px; width: fit-content; }
+
+  /* Params */
+  .param-row { margin-bottom: 12px; }
+  .param-header { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-bottom: 4px; }
+  .param-val { color: #00d4ff; font-family: monospace; }
+  input[type=range] { width: 100%; accent-color: #00d4ff; }
+
+  /* Footer */
+  .footer { max-width: 1200px; margin: 24px auto 0; padding: 0 24px 40px; }
+  .footer-inner { border-top: 1px solid #1e2d45; padding-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .footer-copy { font-size: 12px; color: #64748b; }
+  .footer-copy span { color: #00d4ff; font-weight: 700; }
+  .footer-info { font-size: 11px; color: #64748b; text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-icon">🏥</div>
+  <div>
+    <div class="header-title">Medical Image Enhancement System</div>
+    <div class="header-sub">نظام تحسين الصور الطبية الإشعاعية · OpenCV Techniques · Python-based</div>
+    <div class="header-dev">👨‍💻 Ali Hussein Allawi &nbsp;|&nbsp; Medical Physics &nbsp;|&nbsp; University of Al-Qadisiyah, Iraq</div>
+  </div>
+  <div class="badges">
+    <span class="badge badge-blue">CLAHE</span>
+    <span class="badge badge-green">DENOISE</span>
+    <span class="badge badge-amber">EDGE DETECTION</span>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+  <!-- Left -->
+  <div>
+    <!-- Controls -->
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateXRay()">⚡ Generate X-Ray Sample</button>
+      <label class="btn btn-secondary" style="cursor:pointer">
+        📁 Upload Image
+        <input type="file" accept="image/*" onchange="uploadImage(event)" style="display:none">
+      </label>
+      <button class="btn btn-green" onclick="downloadResult()" id="downloadBtn" style="display:none">⬇ Download Result</button>
+    </div>
+
+    <!-- Canvases -->
+    <div class="canvas-grid">
+      <div class="canvas-panel">
+        <div class="canvas-header">
+          <span>Original Image</span>
+          <span class="badge" style="background:#64748b22;color:#64748b;border:1px solid #64748b44;font-size:10px;padding:2px 7px;border-radius:99px;font-weight:700;letter-spacing:1px">INPUT</span>
+        </div>
+        <div class="canvas-wrap" id="origWrap">
+          <div class="canvas-placeholder"><span>🩻</span>Click "Generate" to start</div>
+          <canvas id="origCanvas" style="display:none"></canvas>
+        </div>
+      </div>
+      <div class="canvas-panel">
+        <div class="canvas-header">
+          <span id="outputLabel">No Filter Applied</span>
+          <span class="badge badge-blue" style="font-size:10px;padding:2px 7px;border-radius:99px;font-weight:700;letter-spacing:1px" id="outputBadge">PREVIEW</span>
+        </div>
+        <div class="canvas-wrap" id="procWrap">
+          <div class="canvas-placeholder" id="procPlaceholder"><span>🩻</span>Click "Generate" to start</div>
+          <canvas id="procCanvas" style="display:none"></canvas>
+          <div class="processing-overlay" id="procOverlay" style="display:none">⏳ Processing…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-panel" id="statsPanel" style="display:none">
+      <div class="stats-title">📊 IMAGE QUALITY METRICS</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="statSNR">—</div><div class="stat-label">SNR</div></div>
+        <div class="stat-box"><div class="stat-val" id="statContrast">—</div><div class="stat-label">CONTRAST (σ)</div></div>
+        <div class="stat-box"><div class="stat-val" id="statMean">—</div><div class="stat-label">MEAN INTENSITY</div></div>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="pipeline" id="pipelinePanel" style="display:none">
+      <span class="pipeline-label">PIPELINE:</span>
+      <span id="pipelineSteps"></span>
+    </div>
+  </div>
+
+  <!-- Right -->
+  <div class="right-panel">
+    <!-- Presets -->
+    <div class="panel">
+      <div class="panel-title panel-title-blue">⚡ IMAGING PRESETS</div>
+      <div class="presets-grid">
+        <button class="preset-btn" onclick="applyPreset(['clahe','bilateral','canny'])">
+          <span class="preset-icon">🦴</span>X-Ray
+          <div class="preset-steps">clahe → bilateral → canny</div>
+        </button>
+        <button class="preset-btn" onclick="applyPreset(['gaussian','clahe','unsharp'])">
+          <span class="preset-icon">🧠</span>MRI
+          <div class="preset-steps">gaussian → clahe → unsharp</div>
+        </button>
+        <button class="preset-btn" onclick="applyPreset(['gaussian','gamma','sobel'])">
+          <span class="preset-icon">🫁</span>CT Scan
+          <div class="preset-steps">gaussian → gamma → sobel</div>
+        </button>
+        <button class="preset-btn" onclick="applyPreset(['median','clahe'])">
+          <span class="preset-icon">🔬</span>Mammography
+          <div class="preset-steps">median → clahe</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Contrast -->
+    <div class="panel">
+      <div class="panel-title panel-title-accent">CONTRAST ENHANCEMENT</div>
+      <div class="tech-buttons">
+        <button class="tech-btn" id="btn-original" onclick="applyTech('original')">
+          Original<span class="tech-badge" style="background:#64748b22;color:#64748b;border:1px solid #64748b44">BASE</span>
+        </button>
+        <button class="tech-btn" id="btn-clahe" onclick="applyTech('clahe')">
+          CLAHE<span class="tech-badge badge-blue" style="background:#00d4ff22;color:#00d4ff;border:1px solid #00d4ff44">CONTRAST</span>
+        </button>
+        <button class="tech-btn" id="btn-histogram_eq" onclick="applyTech('histogram_eq')">
+          Hist. EQ<span class="tech-badge" style="background:#00d4ff22;color:#00d4ff;border:1px solid #00d4ff44">CONTRAST</span>
+        </button>
+        <button class="tech-btn" id="btn-gamma" onclick="applyTech('gamma')">
+          Gamma γ<span class="tech-badge" style="background:#00d4ff22;color:#00d4ff;border:1px solid #00d4ff44">CONTRAST</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Noise -->
+    <div class="panel">
+      <div class="panel-title panel-title-green">NOISE REDUCTION</div>
+      <div class="tech-buttons">
+        <button class="tech-btn" id="btn-gaussian" onclick="applyTech('gaussian')">
+          Gaussian<span class="tech-badge" style="background:#00e67622;color:#00e676;border:1px solid #00e67644">DENOISE</span>
+        </button>
+        <button class="tech-btn" id="btn-median" onclick="applyTech('median')">
+          Median<span class="tech-badge" style="background:#00e67622;color:#00e676;border:1px solid #00e67644">DENOISE</span>
+        </button>
+        <button class="tech-btn" id="btn-bilateral" onclick="applyTech('bilateral')">
+          Bilateral<span class="tech-badge" style="background:#00e67622;color:#00e676;border:1px solid #00e67644">DENOISE</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Edge -->
+    <div class="panel">
+      <div class="panel-title panel-title-amber">EDGE / SHARPEN</div>
+      <div class="tech-buttons">
+        <button class="tech-btn" id="btn-canny" onclick="applyTech('canny')">
+          Canny<span class="tech-badge" style="background:#ffb30022;color:#ffb300;border:1px solid #ffb30044">EDGE</span>
+        </button>
+        <button class="tech-btn" id="btn-sobel" onclick="applyTech('sobel')">
+          Sobel<span class="tech-badge" style="background:#ffb30022;color:#ffb300;border:1px solid #ffb30044">EDGE</span>
+        </button>
+        <button class="tech-btn" id="btn-unsharp" onclick="applyTech('unsharp')">
+          Unsharp<span class="tech-badge" style="background:#ffb30022;color:#ffb300;border:1px solid #ffb30044">SHARPEN</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Params -->
+    <div class="panel">
+      <div class="panel-title panel-title-blue">⚙ PARAMETERS</div>
+      <div class="param-row">
+        <div class="param-header"><span>CLAHE Clip Limit</span><span class="param-val" id="v-clipLimit">2.5</span></div>
+        <input type="range" min="0.5" max="8" step="0.5" value="2.5" oninput="updateParam('clipLimit',this.value)">
+      </div>
+      <div class="param-row">
+        <div class="param-header"><span>Gamma (γ)</span><span class="param-val" id="v-gamma">1.4</span></div>
+        <input type="range" min="0.3" max="3" step="0.1" value="1.4" oninput="updateParam('gamma',this.value)">
+      </div>
+      <div class="param-row">
+        <div class="param-header"><span>Kernel Size</span><span class="param-val" id="v-kernelSize">5</span></div>
+        <input type="range" min="3" max="11" step="2" value="5" oninput="updateParam('kernelSize',this.value)">
+      </div>
+      <div class="param-row">
+        <div class="param-header"><span>Unsharp Strength</span><span class="param-val" id="v-strength">1.5</span></div>
+        <input type="range" min="0.5" max="3" step="0.1" value="1.5" oninput="updateParam('strength',this.value)">
+      </div>
+      <div class="param-row">
+        <div class="param-header"><span>Canny Low</span><span class="param-val" id="v-low">30</span></div>
+        <input type="range" min="10" max="100" step="5" value="30" oninput="updateParam('low',this.value)">
+      </div>
+      <div class="param-row">
+        <div class="param-header"><span>Canny High</span><span class="param-val" id="v-high">120</span></div>
+        <input type="range" min="50" max="250" step="10" value="120" oninput="updateParam('high',this.value)">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <div class="footer-inner">
+    <div class="footer-copy">© 2026 <span>Ali Hussein Allawi</span> — All Rights Reserved</div>
+    <div class="footer-info">Department of Medical Physics · College of Sciences · University of Al-Qadisiyah, Iraq</div>
+  </div>
+</div>
+
+<script>
+const params = { clipLimit:2.5, tileSize:8, gamma:1.4, kernelSize:5, sigma:1.0, sigmaColor:60, sigmaSpace:60, low:30, high:120, strength:1.5 };
+let loaded = false, activeTech = 'original', history = [];
+
+function updateParam(k, v) {
+  params[k] = parseFloat(v);
+  document.getElementById('v-'+k).textContent = v;
+}
+
+function generateXRay() {
+  const orig = document.getElementById('origCanvas');
+  const proc = document.getElementById('procCanvas');
+  orig.width = proc.width = 384; orig.height = proc.height = 384;
+  const ctx = orig.getContext('2d');
+  const id = ctx.createImageData(384, 384);
+  const d = id.data, w = 384, h = 384, cx = w/2, cy = h/2;
+  const rng = (seed) => { let s=seed; return ()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; }; };
+  const rand = rng(42);
+  const structs = [{x:w*.35,y:h*.4,r:w*.12,i:55},{x:w*.65,y:h*.4,r:w*.12,i:55},{x:w*.5,y:h*.55,r:w*.06,i:40},{x:w*.42,y:h*.35,r:w*.035,i:70},{x:w*.58,y:h*.45,r:w*.025,i:70}];
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const dist=Math.sqrt((x-cx)**2+(y-cy)**2);
+    let v=Math.max(0,1-dist/(Math.min(w,h)*.55))*200;
+    for(const s of structs){const dd=Math.sqrt((x-s.x)**2+(y-s.y)**2);if(dd<s.r)v=Math.min(255,v+s.i*(1-dd/s.r));}
+    v+=(rand()-.5)*35; v=Math.min(255,Math.max(0,Math.round(v)));
+    const i=(y*w+x)*4; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+  }
+  ctx.putImageData(id,0,0);
+  proc.getContext('2d').drawImage(orig,0,0);
+  showCanvases(); loaded=true; activeTech='original'; history=[];
+  document.getElementById('outputLabel').textContent='No Filter Applied';
+  document.getElementById('statsPanel').style.display='none';
+  document.getElementById('pipelinePanel').style.display='none';
+  document.getElementById('downloadBtn').style.display='inline-block';
+  setActiveBtn('original');
+}
+
+function uploadImage(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const orig = document.getElementById('origCanvas');
+      const proc = document.getElementById('procCanvas');
+      orig.width = proc.width = 384; orig.height = proc.height = 384;
+      const ctx = orig.getContext('2d');
+      ctx.drawImage(img, 0, 0, 384, 384);
+      const id = ctx.getImageData(0,0,384,384);
+      for(let i=0;i<id.data.length;i+=4){const g=Math.round(.299*id.data[i]+.587*id.data[i+1]+.114*id.data[i+2]);id.data[i]=id.data[i+1]=id.data[i+2]=g;}
+      ctx.putImageData(id,0,0);
+      proc.getContext('2d').drawImage(orig,0,0);
+      showCanvases(); loaded=true; activeTech='original'; history=[];
+      document.getElementById('downloadBtn').style.display='inline-block';
+      setActiveBtn('original');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showCanvases() {
+  ['origCanvas','procCanvas'].forEach(id=>{document.getElementById(id).style.display='block';});
+  document.getElementById('origWrap').querySelector('.canvas-placeholder') && (document.getElementById('origWrap').querySelector('.canvas-placeholder').style.display='none');
+  document.getElementById('procPlaceholder').style.display='none';
+}
+
+function applyTech(techId) {
+  if(!loaded) return;
+  if(techId==='original'){
+    document.getElementById('procCanvas').getContext('2d').drawImage(document.getElementById('origCanvas'),0,0);
+    document.getElementById('outputLabel').textContent='No Filter Applied';
+    document.getElementById('outputBadge').textContent='PREVIEW';
+    document.getElementById('statsPanel').style.display='none';
+    activeTech='original'; history=[]; setActiveBtn('original');
+    document.getElementById('pipelinePanel').style.display='none';
+    return;
+  }
+  document.getElementById('procOverlay').style.display='flex';
+  setTimeout(()=>{
+    document.getElementById('procCanvas').getContext('2d').drawImage(document.getElementById('origCanvas'),0,0);
+    const s = process(document.getElementById('procCanvas'), techId, params);
+    showStats(s);
+    document.getElementById('outputLabel').textContent='Enhanced · '+techId.toUpperCase();
+    document.getElementById('outputBadge').textContent='OUTPUT';
+    activeTech=techId; history=[techId]; setActiveBtn(techId);
+    document.getElementById('procOverlay').style.display='none';
+    updatePipeline([techId]);
+  },30);
+}
+
+function applyPreset(steps) {
+  if(!loaded) return;
+  document.getElementById('procOverlay').style.display='flex';
+  setTimeout(()=>{
+    const proc = document.getElementById('procCanvas');
+    proc.getContext('2d').drawImage(document.getElementById('origCanvas'),0,0);
+    let s;
+    for(const step of steps) s = process(proc, step, params);
+    showStats(s);
+    activeTech=steps[steps.length-1]; history=steps;
+    setActiveBtn(activeTech);
+    document.getElementById('outputLabel').textContent='Pipeline: '+steps.join(' → ');
+    document.getElementById('outputBadge').textContent='OUTPUT';
+    document.getElementById('procOverlay').style.display='none';
+    updatePipeline(steps);
+  },30);
+}
+
+function updatePipeline(steps) {
+  const p = document.getElementById('pipelinePanel');
+  const s = document.getElementById('pipelineSteps');
+  p.style.display='flex';
+  s.innerHTML = steps.map((h,i)=>(i>0?'<span style="color:#64748b;margin:0 4px">→</span>':'')+`<span class="badge badge-blue">${h.toUpperCase()}</span>`).join('');
+}
+
+function showStats(s) {
+  if(!s) return;
+  document.getElementById('statsPanel').style.display='block';
+  document.getElementById('statSNR').textContent=s.snr;
+  document.getElementById('statContrast').textContent=s.contrast;
+  document.getElementById('statMean').textContent=s.mean;
+}
+
+function setActiveBtn(id) {
+  document.querySelectorAll('.tech-btn').forEach(b=>b.classList.remove('active'));
+  const el = document.getElementById('btn-'+id);
+  if(el) el.classList.add('active');
+}
+
+function downloadResult() {
+  const link = document.createElement('a');
+  link.download = 'enhanced_'+activeTech+'.png';
+  link.href = document.getElementById('procCanvas').toDataURL();
+  link.click();
+}
+
+// ─── Image Processing ─────────────────────────────────────────
+function process(canvas, tech, p) {
+  const ctx = canvas.getContext('2d');
+  const id = ctx.getImageData(0,0,canvas.width,canvas.height);
+  const d = id.data, w=canvas.width, h=canvas.height;
+  const gray = new Float32Array(w*h);
+  for(let i=0;i<w*h;i++) gray[i]=d[i*4];
+  let result = new Float32Array(gray);
+
+  if(tech==='clahe') result=clahe(gray,w,h,p.clipLimit,p.tileSize||8);
+  else if(tech==='histogram_eq') result=histEq(gray,w,h);
+  else if(tech==='gamma') { for(let i=0;i<gray.length;i++) result[i]=Math.pow(gray[i]/255,1/p.gamma)*255; }
+  else if(tech==='gaussian') result=convolve(gray,w,h,gaussKernel(p.kernelSize,p.sigma||1),p.kernelSize);
+  else if(tech==='median') result=medianFilter(gray,w,h,p.kernelSize);
+  else if(tech==='bilateral') result=bilateral(gray,w,h,5,p.sigmaColor,p.sigmaSpace);
+  else if(tech==='canny') { const b=convolve(gray,w,h,gaussKernel(5,1),5); result=canny(b,w,h,p.low,p.high); }
+  else if(tech==='sobel') result=sobel(gray,w,h);
+  else if(tech==='unsharp') { const b=convolve(gray,w,h,gaussKernel(5,1),5); for(let i=0;i<gray.length;i++) result[i]=Math.min(255,Math.max(0,gray[i]*(1+p.strength)-b[i]*p.strength)); }
+
+  const out = ctx.createImageData(w,h);
+  for(let i=0;i<w*h;i++){const v=Math.min(255,Math.max(0,Math.round(result[i])));out.data[i*4]=out.data[i*4+1]=out.data[i*4+2]=v;out.data[i*4+3]=255;}
+  ctx.putImageData(out,0,0);
+
+  const mean=result.reduce((a,b)=>a+b,0)/result.length;
+  const std=Math.sqrt(result.reduce((a,b)=>a+(b-mean)**2,0)/result.length);
+  return {snr:(std>0?mean/std:0).toFixed(2),contrast:std.toFixed(2),mean:mean.toFixed(1)};
+}
+
+function gaussKernel(size,sigma){const k=Math.floor(size/2),kern=[];let sum=0;for(let y=-k;y<=k;y++)for(let x=-k;x<=k;x++){const v=Math.exp(-(x*x+y*y)/(2*sigma*sigma));kern.push(v);sum+=v;}return kern.map(v=>v/sum);}
+function convolve(data,w,h,kern,kSize){const k=Math.floor(kSize/2),res=new Float32Array(data.length);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sum=0;for(let ky=-k;ky<=k;ky++)for(let kx=-k;kx<=k;kx++){const ny=Math.min(h-1,Math.max(0,y+ky)),nx=Math.min(w-1,Math.max(0,x+kx));sum+=data[ny*w+nx]*kern[(ky+k)*kSize+(kx+k)];}res[y*w+x]=sum;}return res;}
+function histEq(data,w,h){const hist=new Float32Array(256);for(let i=0;i<data.length;i++)hist[Math.round(data[i])]++;const cdf=new Float32Array(256);cdf[0]=hist[0];for(let i=1;i<256;i++)cdf[i]=cdf[i-1]+hist[i];const cdfMin=cdf.find(v=>v>0)||1,total=w*h,res=new Float32Array(data.length);for(let i=0;i<data.length;i++)res[i]=((cdf[Math.round(data[i])]-cdfMin)/(total-cdfMin))*255;return res;}
+function clahe(data,w,h,clip,tile){const res=new Float32Array(data.length),tilesX=Math.ceil(w/tile),tilesY=Math.ceil(h/tile);for(let ty=0;ty<tilesY;ty++)for(let tx=0;tx<tilesX;tx++){const x0=tx*tile,y0=ty*tile,x1=Math.min(x0+tile,w),y1=Math.min(y0+tile,h),hist=new Float32Array(256);let count=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){hist[Math.round(data[y*w+x])]++;count++;}const limit=(clip*count)/256;let excess=0;for(let i=0;i<256;i++){if(hist[i]>limit){excess+=hist[i]-limit;hist[i]=limit;}}const add=excess/256;for(let i=0;i<256;i++)hist[i]+=add;const cdf=new Float32Array(256);cdf[0]=hist[0];for(let i=1;i<256;i++)cdf[i]=cdf[i-1]+hist[i];const cdfMin=cdf.find(v=>v>0)||1;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)res[y*w+x]=((cdf[Math.round(data[y*w+x])]-cdfMin)/(count-cdfMin))*255;}return res;}
+function medianFilter(data,w,h,kSize){const k=Math.floor(kSize/2),res=new Float32Array(data.length);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const n=[];for(let ky=-k;ky<=k;ky++)for(let kx=-k;kx<=k;kx++)n.push(data[Math.min(h-1,Math.max(0,y+ky))*w+Math.min(w-1,Math.max(0,x+kx))]);n.sort((a,b)=>a-b);res[y*w+x]=n[Math.floor(n.length/2)];}return res;}
+function bilateral(data,w,h,d,sc,ss){const k=Math.floor(d/2),res=new Float32Array(data.length);for(let y=0;y<h;y++)for(let x=0;x<w;x++){let sum=0,wSum=0;const c=data[y*w+x];for(let ky=-k;ky<=k;ky++)for(let kx=-k;kx<=k;kx++){const ny=Math.min(h-1,Math.max(0,y+ky)),nx=Math.min(w-1,Math.max(0,x+kx)),v=data[ny*w+nx],w2=Math.exp(-(kx*kx+ky*ky)/(2*ss*ss)-(v-c)**2/(2*sc*sc));sum+=v*w2;wSum+=w2;}res[y*w+x]=sum/wSum;}return res;}
+function sobel(data,w,h){const res=new Float32Array(data.length),kx=[-1,0,1,-2,0,2,-1,0,1],ky=[-1,-2,-1,0,0,0,1,2,1];for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){let gx=0,gy=0;for(let ky2=-1;ky2<=1;ky2++)for(let kx2=-1;kx2<=1;kx2++){const v=data[(y+ky2)*w+(x+kx2)];gx+=v*kx[(ky2+1)*3+(kx2+1)];gy+=v*ky[(ky2+1)*3+(kx2+1)];}res[y*w+x]=Math.min(255,Math.sqrt(gx*gx+gy*gy));}return res;}
+function canny(data,w,h,low,high){const s=sobel(data,w,h),res=new Float32Array(data.length);for(let i=0;i<s.length;i++)res[i]=s[i]>=high?255:s[i]>=low?128:0;return res;}
+</script>
+</body>
+</html>
