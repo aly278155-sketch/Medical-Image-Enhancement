@@ -13,12 +13,7 @@ The project focuses on improving image clarity, contrast, and visibility to assi
 * Simple and responsive UI
 * Works completely on the client side
 
-## Technologies Used
 
-* HTML
-* CSS
-* JavaScript
-* Image Processing Techniques
 
 ## Project Goal
 
